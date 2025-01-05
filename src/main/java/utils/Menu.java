@@ -18,6 +18,9 @@ public class Menu {
         if (isLoggedIn) {
             menu.add("l - Login different user");
             menu.add("o - Logout");
+            menu.add("a - Add Category");
+            menu.add("v - View Categories");
+            menu.add("s - Set Category Limit");
         } else {
             menu.add("l - Login");
         }

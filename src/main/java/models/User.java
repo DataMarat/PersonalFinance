@@ -1,16 +1,18 @@
 package models;
 
-import java.util.UUID;
+import utils.CategoryManager;
 
 public class User {
     private String uuid;
     private String login;
     private String password;
+    private CategoryManager categoryManager;
 
     public User(String login, String password) {
-        this.uuid = UUID.randomUUID().toString();
+        this.uuid = java.util.UUID.randomUUID().toString();
         this.login = login;
         this.password = password;
+        this.categoryManager = new CategoryManager();
     }
 
     public String getUuid() {
@@ -23,5 +25,9 @@ public class User {
 
     public String getPassword() {
         return password;
+    }
+
+    public CategoryManager getCategoryManager() {
+        return categoryManager;
     }
 }

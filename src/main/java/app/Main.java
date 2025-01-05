@@ -2,7 +2,9 @@ package app;
 
 import auth.AuthenticationService;
 import models.User;
+import models.Category;
 import utils.Menu;
+import utils.CategoryManager;
 
 import java.util.Scanner;
 
@@ -56,6 +58,55 @@ public class Main {
                         authService.logout();
                     } else {
                         System.out.println("No user is currently logged in.");
+                    }
+                    break;
+
+                case "a": // Добавить категорию
+                    if (authService.getCurrentUser() != null) {
+                        System.out.print("Enter the name of the new category: ");
+                        String categoryName = scanner.nextLine().trim();
+                        if (authService.getCurrentUser().getCategoryManager().addCategory(categoryName)) {
+                            System.out.println("Category added successfully: " + categoryName);
+                        } else {
+                            System.out.println("Category already exists: " + categoryName);
+                        }
+                    } else {
+                        System.out.println("You must be logged in to add categories.");
+                    }
+                    break;
+
+                case "v": // Просмотр всех категорий
+                    if (authService.getCurrentUser() != null) {
+                        System.out.println("All Categories:");
+                        for (Category category : authService.getCurrentUser().getCategoryManager().getAllCategories()) {
+                            System.out.println("- " + category);
+                        }
+                    } else {
+                        System.out.println("You must be logged in to view categories.");
+                    }
+                    break;
+
+                case "s": // Установить лимит для категории
+                    if (authService.getCurrentUser() != null) {
+                        System.out.print("Enter the name of the category: ");
+                        String categoryName = scanner.nextLine().trim();
+                        CategoryManager manager = authService.getCurrentUser().getCategoryManager();
+                        Category category = manager.getAllCategories().stream()
+                                .filter(c -> c.getName().equalsIgnoreCase(categoryName))
+                                .findFirst()
+                                .orElse(null);
+
+                        if (category != null) {
+                            System.out.print("Enter the new limit for the category: ");
+                            double limit = scanner.nextDouble();
+                            scanner.nextLine();
+                            category.setLimit(limit);
+                            System.out.println("Limit set successfully for category " + categoryName + ": " + limit);
+                        } else {
+                            System.out.println("Category not found: " + categoryName);
+                        }
+                    } else {
+                        System.out.println("You must be logged in to set category limits.");
                     }
                     break;
 
