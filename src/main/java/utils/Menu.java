@@ -1,30 +1,39 @@
 package utils;
 
+import static utils.Constants.*;
+
 import java.util.ArrayList;
 import java.util.List;
 
 public class Menu {
     private final List<String> menuItems;
 
-    // Конструктор для построения меню в зависимости от состояния пользователя
-    public Menu(boolean isLoggedIn) {
-        this.menuItems = buildMenu(isLoggedIn);
+    // Конструктор для построения меню в зависимости от состояния пользователя и наличия кошелька
+    public Menu(boolean isLoggedIn, boolean hasWallet) {
+        this.menuItems = buildMenu(isLoggedIn, hasWallet);
     }
 
     // Метод для формирования меню
-    private List<String> buildMenu(boolean isLoggedIn) {
+    private List<String> buildMenu(boolean isLoggedIn, boolean hasWallet) {
         List<String> menu = new ArrayList<>();
-        menu.add("r - Register User");
+        menu.add("r - " + REGISTER_USER_COMMAND);
         if (isLoggedIn) {
-            menu.add("l - Login different user");
-            menu.add("o - Logout");
-            menu.add("a - Add Category");
-            menu.add("v - View Categories");
-            menu.add("s - Set Category Limit");
+            menu.add("l - " + LOGIN_COMMAND);
+            menu.add("o - " + LOGOUT_COMMAND);
+            if (hasWallet) {
+                menu.add("w - " + ENTER_WALLET_COMMAND);
+                menu.add("+ - " + ADD_INCOME_COMMAND);
+                menu.add("- - " + ADD_EXPENSE_COMMAND);
+            } else {
+                menu.add("c - " + CREATE_WALLET_COMMAND);
+            }
+            menu.add("a - " + ADD_CATEGORY_COMMAND);
+            menu.add("v - " + VIEW_CATEGORIES_COMMAND);
+            menu.add("s - " + SET_CATEGORY_LIMIT_COMMAND);
         } else {
-            menu.add("l - Login");
+            menu.add("l - " + LOGIN_COMMAND);
         }
-        menu.add("q - Quit Program");
+        menu.add("q - " + QUIT_PROGRAM_COMMAND);
         return menu;
     }
 

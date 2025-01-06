@@ -1,3 +1,5 @@
+# Исключение JSON-файла с данными
+src/main/resources/finance_data.json
 target/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/

@@ -23,6 +23,6 @@ public class Category {
 
     @Override
     public String toString() {
-        return name + " (Limit: " + (limit > 0 ? limit : "No Limit") + ")";
+        return name +  (limit > 0 ? " (Limit: " + limit + ")": " (No Limit)");
     }
 }
