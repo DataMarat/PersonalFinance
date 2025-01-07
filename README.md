@@ -80,14 +80,15 @@
 ### Ввод данных:
 
    ```bash
-    Enter your choice: `r`  
-    Enter login: `ivan`  
-    Enter password: `password123`  
-    **Registration successful!** You are now logged in as: `ivan`, your ID: `da0aa159-beba-403f-a9f7-7e481c95fb24`
-    
-    Enter your choice: `c`  
-    **Wallet created successfully!**
-    ```
+   Enter your choice: r
+   Enter login: ivan
+   Enter password: password123
+   Registration successful! You are now logged in as: ivan, your ID: da0aa159-beba-403f-a9f7-7e481c95fb24
+
+   Enter your choice: c
+   Wallet created successfully!
+  ```
+
 
 ### Вывод статистики:
 
@@ -96,9 +97,9 @@
     Total Expense: `2000.0`
     
     Category Budgets:
-    - **Food:** Budget `4000.0`, Remaining: `3000.0`
-    - **Transport:** Budget `2000.0`, Remaining: `2000.0`
-    ```
+    - Food: Budget `4000.0`, Remaining: `3000.0`
+    - Transport: Budget `2000.0`, Remaining: `2000.0`
+   ```
 
 
 ## Ограничения
