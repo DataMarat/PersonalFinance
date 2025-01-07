@@ -79,7 +79,7 @@
 
 ### Ввод данных:
 
-    ```bash
+   ```bash
     Enter your choice: `r`  
     Enter login: `ivan`  
     Enter password: `password123`  
@@ -91,7 +91,7 @@
 
 ### Вывод статистики:
 
-    ```bash
+   ```bash
     Total Income: `5000.0`  
     Total Expense: `2000.0`
     
