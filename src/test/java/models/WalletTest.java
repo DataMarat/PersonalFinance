@@ -1,7 +1,6 @@
 package models;
 
 import org.junit.jupiter.api.Test;
-import utils.CategoryManager;
 
 import java.util.Date;
 import java.util.List;
@@ -13,17 +12,16 @@ class WalletTest {
 
     @Test
     void testWalletInitialization() {
-        CategoryManager categoryManager = new CategoryManager();
-        Wallet wallet = new Wallet(categoryManager);
+        Wallet wallet = new Wallet();
 
         assertNotNull(wallet.getOperations());
+        assertNotNull(wallet.getCategories());
         assertEquals(0.0, wallet.getBalance());
     }
 
     @Test
     void testAddOperationAndBalanceUpdate() {
-        CategoryManager categoryManager = new CategoryManager();
-        Wallet wallet = new Wallet(categoryManager);
+        Wallet wallet = new Wallet();
 
         wallet.addOperation(new Operation(OperationType.INCOME, 5000, "Salary"));
         assertEquals(5000, wallet.getBalance());
@@ -33,9 +31,22 @@ class WalletTest {
     }
 
     @Test
+    void testAddCategory() {
+        Wallet wallet = new Wallet();
+        wallet.addCategory(new Category("Food", 10000));
+        wallet.addCategory(new Category("Transport", 5000));
+
+        List<Category> categories = wallet.getCategories();
+        assertEquals(2, categories.size());
+        assertEquals("Food", categories.get(0).getName());
+        assertEquals(10000, categories.get(0).getLimit());
+        assertEquals("Transport", categories.get(1).getName());
+        assertEquals(5000, categories.get(1).getLimit());
+    }
+
+    @Test
     void testRecalculateBalance() {
-        CategoryManager categoryManager = new CategoryManager();
-        Wallet wallet = new Wallet(categoryManager);
+        Wallet wallet = new Wallet();
 
         wallet.addOperation(new Operation(OperationType.INCOME, 5000, "Salary"));
         wallet.addOperation(new Operation(OperationType.EXPENSE, 2000, "Food"));
@@ -48,8 +59,7 @@ class WalletTest {
 
     @Test
     void testFilterOperations() {
-        CategoryManager categoryManager = new CategoryManager();
-        Wallet wallet = new Wallet(categoryManager);
+        Wallet wallet = new Wallet();
 
         Date date1 = new Date(System.currentTimeMillis() - 1000000); // 10 минут назад
         Date date2 = new Date(); // Сейчас
@@ -64,8 +74,7 @@ class WalletTest {
 
     @Test
     void testCalculateTotals() {
-        CategoryManager categoryManager = new CategoryManager();
-        Wallet wallet = new Wallet(categoryManager);
+        Wallet wallet = new Wallet();
 
         wallet.addOperation(new Operation(OperationType.INCOME, 5000, "Salary"));
         wallet.addOperation(new Operation(OperationType.EXPENSE, 2000, "Food"));
@@ -77,8 +86,7 @@ class WalletTest {
 
     @Test
     void testCalculateCategoryExpenses() {
-        CategoryManager categoryManager = new CategoryManager();
-        Wallet wallet = new Wallet(categoryManager);
+        Wallet wallet = new Wallet();
 
         wallet.addOperation(new Operation(OperationType.EXPENSE, 2000, "Food"));
         wallet.addOperation(new Operation(OperationType.EXPENSE, 3000, "Transport"));
@@ -86,5 +94,22 @@ class WalletTest {
         Map<String, Double> expenses = wallet.calculateCategoryExpenses(null, null);
         assertEquals(2000, expenses.get("Food"));
         assertEquals(3000, expenses.get("Transport"));
+    }
+
+    @Test
+    void testTransferAndReceiveAmount() {
+        Wallet senderWallet = new Wallet();
+        Wallet recipientWallet = new Wallet();
+
+        senderWallet.setBalance(5000);
+        boolean transferSuccess = senderWallet.transferAmount(2000);
+        assertTrue(transferSuccess);
+        assertEquals(3000, senderWallet.getBalance());
+
+        recipientWallet.receiveAmount(2000, "Transfer");
+        assertEquals(2000, recipientWallet.getBalance());
+
+        assertEquals(1, recipientWallet.getOperations().size());
+        assertEquals("Transfer", recipientWallet.getOperations().get(0).getCategory());
     }
 }

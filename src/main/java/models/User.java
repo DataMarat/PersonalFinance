@@ -1,20 +1,17 @@
 package models;
 
-import utils.CategoryManager;
 import java.util.UUID;
 
 public class User {
     private String uuid;
     private String login;
     private String password;
-    private CategoryManager categoryManager;
     private Wallet wallet; // Кошелёк пользователя
 
     public User(String login, String password) {
-        this.uuid = java.util.UUID.randomUUID().toString();
+        this.uuid = UUID.randomUUID().toString();
         this.login = login;
         this.password = password;
-        this.categoryManager = new CategoryManager();
         this.wallet = null; // Изначально кошелёк отсутствует
     }
 
@@ -30,23 +27,19 @@ public class User {
         return password;
     }
 
-    public CategoryManager getCategoryManager() {
-        return categoryManager;
-    }
-
-    public void setCategoryManager(CategoryManager categoryManager) {
-        this.categoryManager = categoryManager;
-    }
     public Wallet getWallet() {
         return wallet;
     }
 
     public void createWallet() {
         if (this.wallet == null) {
-            if (this.categoryManager == null) {
-                throw new IllegalStateException("CategoryManager is not initialized for this user.");
-            }
-            this.wallet = new Wallet(this.categoryManager);
+            this.wallet = new Wallet();
+            // Добавляем базовые категории
+            this.wallet.addCategory(new Category("Food"));
+            this.wallet.addCategory(new Category("Transport"));
+            this.wallet.addCategory(new Category("Entertainment"));
+            this.wallet.addCategory(new Category("Utilities"));
+            this.wallet.addCategory(new Category("Salary"));
         }
     }
 
@@ -59,6 +52,7 @@ public class User {
             wallet.setBalance(balance);
         }
     }
+
     // Наличие кошелька
     public boolean hasWallet() {
         return wallet != null;

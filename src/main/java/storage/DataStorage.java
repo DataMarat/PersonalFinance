@@ -2,12 +2,14 @@ package storage;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
 import models.User;
 
 import java.io.FileReader;
 import java.io.FileWriter;
+import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.ArrayList;
+import java.lang.reflect.Type;
 import java.util.List;
 
 public class DataStorage {
@@ -17,7 +19,8 @@ public class DataStorage {
     // Сохранение данных
     public static void saveData(List<User> users) {
         try (FileWriter writer = new FileWriter(FILE_PATH)) {
-            GSON.toJson(users, writer);
+            String json = GSON.toJson(users);
+            writer.write(json);
         } catch (IOException e) {
             System.out.println("Error saving data: " + e.getMessage());
         }
@@ -26,15 +29,14 @@ public class DataStorage {
     // Загрузка данных
     public static List<User> loadData() {
         try (FileReader reader = new FileReader(FILE_PATH)) {
-            User[] users = GSON.fromJson(reader, User[].class);
-            if (users != null) {
-                return new ArrayList<>(List.of(users)); // Конвертируем в изменяемый список
-            } else {
-                return new ArrayList<>(); // Возвращаем пустой список, если файл пуст
-            }
+            Type listType = new TypeToken<List<User>>() {}.getType();
+            return GSON.fromJson(reader, listType);
+        } catch (FileNotFoundException e) {
+            System.out.println("No data file found. Starting fresh.");
+            return null;
         } catch (IOException e) {
-            System.out.println("No previous data found or error reading file. Starting fresh.");
-            return new ArrayList<>(); // Возвращаем пустой список при отсутствии файла
+            System.out.println("Error loading data: " + e.getMessage());
+            return null;
         }
     }
 }

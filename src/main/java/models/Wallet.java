@@ -1,7 +1,5 @@
 package models;
 
-import utils.CategoryManager;
-
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -11,17 +9,21 @@ import java.util.stream.Collectors;
 
 public class Wallet {
     private List<Operation> operations;
+    private List<Category> categories;
     private double balance;
-    private CategoryManager categoryManager;
 
-    public Wallet(CategoryManager categoryManager) {
-        this.categoryManager = categoryManager;
+    public Wallet() {
         this.operations = new ArrayList<>();
+        this.categories = new ArrayList<>();
         this.balance = 0.0;
     }
 
     public List<Operation> getOperations() {
         return operations;
+    }
+
+    public List<Category> getCategories() {
+        return categories;
     }
 
     public double getBalance() {
@@ -42,18 +44,14 @@ public class Wallet {
         checkBudgetBalance(); // Проверяем баланс после добавления операции
     }
 
+    public void addCategory(Category category) {
+        this.categories.add(category);
+    }
+
     public void recalculateBalance() {
         this.balance = operations.stream()
                 .mapToDouble(op -> op.getType() == OperationType.INCOME ? op.getAmount() : -op.getAmount())
                 .sum();
-    }
-
-    public CategoryManager getCategoryManager() {
-        return categoryManager;
-    }
-
-    public void setCategoryManager(CategoryManager categoryManager) {
-        this.categoryManager = categoryManager;
     }
 
     public List<Operation> filterOperations(String category, Date fromDate, Date toDate) {
@@ -114,6 +112,7 @@ public class Wallet {
             System.out.println("Warning: Your expenses exceed your income!");
         }
     }
+
     public boolean transferAmount(double amount) {
         if (balance >= amount) {
             balance -= amount;
@@ -126,5 +125,4 @@ public class Wallet {
         balance += amount;
         operations.add(new Operation(OperationType.INCOME, amount, category));
     }
-
 }
