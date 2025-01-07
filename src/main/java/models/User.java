@@ -11,7 +11,7 @@ public class User {
     private Wallet wallet; // Кошелёк пользователя
 
     public User(String login, String password) {
-        this.uuid = UUID.randomUUID().toString();
+        this.uuid = java.util.UUID.randomUUID().toString();
         this.login = login;
         this.password = password;
         this.categoryManager = new CategoryManager();
@@ -34,13 +34,19 @@ public class User {
         return categoryManager;
     }
 
+    public void setCategoryManager(CategoryManager categoryManager) {
+        this.categoryManager = categoryManager;
+    }
     public Wallet getWallet() {
         return wallet;
     }
 
     public void createWallet() {
         if (this.wallet == null) {
-            this.wallet = new Wallet();
+            if (this.categoryManager == null) {
+                throw new IllegalStateException("CategoryManager is not initialized for this user.");
+            }
+            this.wallet = new Wallet(this.categoryManager);
         }
     }
 

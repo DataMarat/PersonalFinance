@@ -11,5 +11,8 @@ public class Constants {
     public static final String SET_CATEGORY_LIMIT_COMMAND = "Set Category Limit";
     public static final String ADD_INCOME_COMMAND = "Add Income";
     public static final String ADD_EXPENSE_COMMAND = "Add Expense";
+    public static final String FILTER_OPERATIONS_COMMAND = "Filter Operations";
+    public static final String SHOW_STATISTICS_COMMAND = "Show Statistics";
+    public static final String SHOW_FULL_MENU_COMMAND = "Show full menu";
     public static final String QUIT_PROGRAM_COMMAND = "Quit Program";
 }

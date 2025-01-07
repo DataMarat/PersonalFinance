@@ -11,17 +11,29 @@ import utils.Menu;
 import utils.Constants;
 
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Collections;
+import java.util.*;
+import java.text.SimpleDateFormat;
 import java.util.List;
-import java.util.Scanner;
+import java.util.stream.Collectors;
+import utils.CategoryManager;
+
 
 public class Main {
     public static void main(String[] args) {
         // Загрузка данных из файла либо старт с нуля
         List<User> users = DataStorage.loadData();
         if (users != null) {
-            users.forEach(User::recalculateBalance); // Пересчёт балансов
+            users.forEach(user -> {
+                // Убедимся, что CategoryManager восстановлен
+                if (user.getCategoryManager() == null) {
+                    user.setCategoryManager(new CategoryManager());
+                }
+                // Передаём CategoryManager в Wallet, если он есть
+                if (user.getWallet() != null) {
+                    user.getWallet().setCategoryManager(user.getCategoryManager());
+                    user.recalculateBalance();
+                }
+            });
         } else {
             users = new ArrayList<>();
         }
@@ -37,7 +49,12 @@ public class Main {
                     authService.getCurrentUser() != null,
                     authService.getCurrentUser() != null && authService.getCurrentUser().getWallet() != null
             );
-            menu.displayMenu();
+
+            if (authService.getCurrentUser() != null) {
+                menu.displayHint();
+            } else {
+                menu.displayMenu();
+            }
 
             System.out.print("Enter your choice: ");
             String choice = scanner.nextLine().trim().toLowerCase();
@@ -108,6 +125,12 @@ public class Main {
                     if (authService.getCurrentUser() != null) {
                         User currentUser = authService.getCurrentUser();
                         if (currentUser.getWallet() == null) {
+                            // Отладочная проверка CategoryManager перед созданием кошелька
+                            if (currentUser.getCategoryManager() == null) {
+                                System.out.println("Error: CategoryManager is not initialized for the current user.");
+                                break;
+                            }
+
                             currentUser.createWallet();
                             System.out.println("Wallet created successfully! You are now in your wallet.");
                             enterWallet(scanner, currentUser.getWallet());
@@ -118,6 +141,7 @@ public class Main {
                         System.out.println("You must be logged in to create a wallet.");
                     }
                     break;
+
 
                 case "w": // Перейти в кошелек
                     if (authService.getCurrentUser() != null) {
@@ -146,7 +170,7 @@ public class Main {
                     }
                     break;
 
-                case "v": // Просмотр всех категорий
+                case "v": // Просмотр всех категорий (лимиты, остатки по лимитам)
                     if (authService.getCurrentUser() != null) {
                         List<Category> categories = authService.getCurrentUser().getCategoryManager().getAllCategories();
                         if (categories.isEmpty()) {
@@ -154,7 +178,15 @@ public class Main {
                         } else {
                             System.out.println("All Categories:");
                             for (Category category : categories) {
-                                System.out.println("- " + category);
+                                double limit = category.getLimit();
+                                double used = authService.getCurrentUser().getWallet().getOperations().stream()
+                                        .filter(op -> op.getType() == OperationType.EXPENSE && op.getCategory().equalsIgnoreCase(category.getName()))
+                                        .mapToDouble(Operation::getAmount)
+                                        .sum();
+                                double remaining = limit > 0 ? (limit - used) : Double.POSITIVE_INFINITY;
+
+                                String limitInfo = limit > 0 ? "Limit: " + limit + ", Remaining: " + (remaining == Double.POSITIVE_INFINITY ? "∞" : remaining) : "No Limit";
+                                System.out.println("- " + category.getName() + " (" + limitInfo + ")");
                             }
                         }
                     } else {
@@ -162,7 +194,7 @@ public class Main {
                     }
                     break;
 
-                case "s": // Установить лимит для категории
+                case "t": // Установить лимит для категории
                     if (authService.getCurrentUser() != null) {
                         System.out.print("Enter the name of the category: ");
                         String categoryName = scanner.nextLine().trim();
@@ -185,13 +217,154 @@ public class Main {
                         System.out.println("You must be logged in to set category limits.");
                     }
                     break;
+                case "f": // Фильтрация операций
+                    if (authService.getCurrentUser() != null && authService.getCurrentUser().getWallet() != null) {
+                        Wallet wallet = authService.getCurrentUser().getWallet();
 
-                case "+": // Приход
+                        System.out.print("Enter category (or leave blank to skip): ");
+                        String category = scanner.nextLine().trim();
+                        if (category.isEmpty()) category = null;
+
+                        System.out.print("Enter start date (dd.MM.yyyy) or leave blank: ");
+                        String fromDateInput = scanner.nextLine().trim();
+                        Date fromDate = null;
+                        if (!fromDateInput.isEmpty()) {
+                            try {
+                                fromDate = new SimpleDateFormat("dd.MM.yyyy").parse(fromDateInput);
+                            } catch (Exception e) {
+                                System.out.println("Invalid date format. Skipping start date.");
+                            }
+                        }
+
+                        System.out.print("Enter end date (dd.MM.yyyy) or leave blank: ");
+                        String toDateInput = scanner.nextLine().trim();
+                        Date toDate = null;
+                        if (!toDateInput.isEmpty()) {
+                            try {
+                                toDate = new SimpleDateFormat("dd.MM.yyyy").parse(toDateInput);
+                            } catch (Exception e) {
+                                System.out.println("Invalid date format. Skipping end date.");
+                            }
+                        }
+
+                        List<Operation> filteredOperations = wallet.filterOperations(category, fromDate, toDate);
+                        if (filteredOperations.isEmpty()) {
+                            System.out.println("No operations found for the given filters.");
+                        } else {
+                            System.out.println("Filtered operations:");
+                            SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy HH:mm:ss");
+                            for (Operation op : filteredOperations) {
+                                String prefix = op.getType() == OperationType.INCOME ? "+" : "-";
+                                System.out.println(prefix + " " + op.getAmount() + " " + op.getCategory() +
+                                        " (" + dateFormat.format(op.getDate()) + ")");
+                            }
+                        }
+                    } else {
+                        System.out.println("You must be logged in and have a wallet to filter operations.");
+                    }
+                    break;
+                case "s": // Показать статистику
+                    if (authService.getCurrentUser() != null && authService.getCurrentUser().getWallet() != null) {
+                        Wallet wallet = authService.getCurrentUser().getWallet();
+
+                        System.out.print("Enter start date (dd.MM.yyyy) or leave blank: ");
+                        String fromDateInput = scanner.nextLine().trim();
+                        Date fromDate = null;
+                        if (!fromDateInput.isEmpty()) {
+                            try {
+                                fromDate = new SimpleDateFormat("dd.MM.yyyy").parse(fromDateInput);
+                            } catch (Exception e) {
+                                System.out.println("Invalid date format. Skipping start date.");
+                            }
+                        }
+
+                        System.out.print("Enter end date (dd.MM.yyyy) or leave blank: ");
+                        String toDateInput = scanner.nextLine().trim();
+                        Date toDate = null;
+                        if (!toDateInput.isEmpty()) {
+                            try {
+                                toDate = new SimpleDateFormat("dd.MM.yyyy").parse(toDateInput);
+                            } catch (Exception e) {
+                                System.out.println("Invalid date format. Skipping end date.");
+                            }
+                        }
+
+                        // Подсчёт общих доходов и расходов
+                        double[] totals = wallet.calculateTotals(fromDate, toDate);
+                        System.out.println("Total Income: " + totals[0]);
+                        System.out.println("Total Expense: " + totals[1]);
+
+                        // Распределение расходов по категориям
+                        Map<String, Double> categoryExpenses = wallet.calculateCategoryExpenses(fromDate, toDate);
+                        if (((Map<?, ?>) categoryExpenses).isEmpty()) {
+                            System.out.println("No expenses found for the given filters.");
+                        } else {
+                            System.out.println("Expenses by category:");
+                            for (Map.Entry<String, Double> entry : categoryExpenses.entrySet()) {
+                                System.out.println("- " + entry.getKey() + ": " + entry.getValue());
+                            }
+                        }
+                    } else {
+                        System.out.println("You must be logged in and have a wallet to view statistics.");
+                    }
+                    break;
+
+                case "+": // Операция прихода
                     processOperation(scanner, authService, OperationType.INCOME);
                     break;
 
-                case "-": // Расход
-                    processOperation(scanner, authService, OperationType.EXPENSE);
+                case "-": // Добавление расхода
+                    if (authService.getCurrentUser() != null && authService.getCurrentUser().getWallet() != null) {
+                        Wallet wallet = authService.getCurrentUser().getWallet();
+
+                        System.out.print("Enter category: ");
+                        String category = scanner.nextLine().trim();
+
+                        // Проверяем, существует ли категория
+                        boolean categoryExists = authService.getCurrentUser().getCategoryManager().getAllCategories().stream()
+                                .anyMatch(c -> c.getName().equalsIgnoreCase(category));
+
+                        if (!categoryExists) {
+                            System.out.println("Category not found. Use 'a' to add a new category.");
+                            break;
+                        }
+
+                        System.out.print("Enter expense amount: ");
+                        double amount;
+                        try {
+                            amount = Double.parseDouble(scanner.nextLine().trim());
+                            if (amount <= 0) {
+                                System.out.println("Amount must be positive.");
+                                break;
+                            }
+                        } catch (NumberFormatException e) {
+                            System.out.println("Invalid amount. Please enter a numeric value.");
+                            break;
+                        }
+
+                        // Создаём операцию расхода
+                        Operation newOperation = new Operation(OperationType.EXPENSE, amount, category);
+
+                        // Добавляем операцию и проверяем баланс
+                        wallet.addOperation(newOperation);
+                        wallet.checkBudgetBalance(); // Проверка превышения расходов
+
+                        // Сохраняем изменения
+                        DataStorage.saveData(users);
+
+                        System.out.println("Expense added successfully.");
+                    } else {
+                        System.out.println("You must be logged in and have a wallet to add expenses.");
+                    }
+                    break;
+
+
+                case "m": // Показать полное меню
+                    if (authService.getCurrentUser() != null) {
+                        menu.displayMenu();
+                    } else {
+                        System.out.println("You must be logged in to view full menu.");
+                    }
                     break;
 
                 case "q": // Завершить работу и сохранить данные в файл
@@ -224,11 +397,7 @@ public class Main {
                 Category category = null;
                 while (category == null) {
                     // Выводим доступные категории
-//                    System.out.println("Available categories:");
                     categories = authService.getCurrentUser().getCategoryManager().getAllCategories();
-//                    for (Category c : categories) {
-//                        System.out.println("- " + c.getName());
-//                    }
 
                     // Просим пользователя выбрать категорию или добавить новую
                     System.out.print("Enter category or enter 'a' to add new: ");
@@ -261,7 +430,8 @@ public class Main {
                 System.out.println("Category selected: " + category.getName());
 
 
-                System.out.print(type == OperationType.INCOME ? "Enter income amount: " : "Enter expense amount: ");
+//                System.out.print(type == OperationType.INCOME ? "Enter income amount: " : "Enter expense amount: ");
+                System.out.print("Enter amount: ");
                 double amount = scanner.nextDouble();
                 scanner.nextLine();
 

@@ -18,18 +18,21 @@ public class Menu {
         List<String> menu = new ArrayList<>();
         menu.add("r - " + REGISTER_USER_COMMAND);
         if (isLoggedIn) {
+            menu.add("m - " + SHOW_FULL_MENU_COMMAND);
             menu.add("l - " + LOGIN_COMMAND);
             menu.add("o - " + LOGOUT_COMMAND);
             if (hasWallet) {
                 menu.add("w - " + ENTER_WALLET_COMMAND);
                 menu.add("+ - " + ADD_INCOME_COMMAND);
                 menu.add("- - " + ADD_EXPENSE_COMMAND);
+                menu.add("f - " + FILTER_OPERATIONS_COMMAND);
+                menu.add("s - " + SHOW_STATISTICS_COMMAND);
             } else {
                 menu.add("c - " + CREATE_WALLET_COMMAND);
             }
             menu.add("a - " + ADD_CATEGORY_COMMAND);
             menu.add("v - " + VIEW_CATEGORIES_COMMAND);
-            menu.add("s - " + SET_CATEGORY_LIMIT_COMMAND);
+            menu.add("t - " + SET_CATEGORY_LIMIT_COMMAND);
         } else {
             menu.add("l - " + LOGIN_COMMAND);
         }
@@ -46,5 +49,10 @@ public class Menu {
             System.out.println(item);
         }
         System.out.println("=======================");
+    }
+
+    // Отображение краткой подсказки
+    public void displayHint() {
+        System.out.println("m - Show full menu, q - Quit program");
     }
 }
