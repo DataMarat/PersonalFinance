@@ -18,7 +18,6 @@ class WalletTest {
 
         assertNotNull(wallet.getOperations());
         assertEquals(0.0, wallet.getBalance());
-        assertNotNull(wallet.getOperations());
     }
 
     @Test
