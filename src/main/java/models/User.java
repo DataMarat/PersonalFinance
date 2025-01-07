@@ -59,4 +59,8 @@ public class User {
             wallet.setBalance(balance);
         }
     }
+    // Наличие кошелька
+    public boolean hasWallet() {
+        return wallet != null;
+    }
 }

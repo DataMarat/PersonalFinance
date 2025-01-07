@@ -32,7 +32,8 @@ public class Menu {
             }
             menu.add("a - " + ADD_CATEGORY_COMMAND);
             menu.add("v - " + VIEW_CATEGORIES_COMMAND);
-            menu.add("t - " + SET_CATEGORY_LIMIT_COMMAND);
+            menu.add("i - " + SET_CATEGORY_LIMIT_COMMAND);
+            menu.add("t - " + TRANSFER_MONEY_COMMAND);
         } else {
             menu.add("l - " + LOGIN_COMMAND);
         }

@@ -15,6 +15,7 @@ import java.util.*;
 import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.stream.Collectors;
+
 import utils.CategoryManager;
 
 
@@ -194,7 +195,7 @@ public class Main {
                     }
                     break;
 
-                case "t": // Установить лимит для категории
+                case "i": // Установить лимит для категории
                     if (authService.getCurrentUser() != null) {
                         System.out.print("Enter the name of the category: ");
                         String categoryName = scanner.nextLine().trim();
@@ -364,6 +365,61 @@ public class Main {
                         menu.displayMenu();
                     } else {
                         System.out.println("You must be logged in to view full menu.");
+                    }
+                    break;
+
+                case "t": // Перевод средств между кошельками
+                    if (authService.getCurrentUser() != null) {
+                        User sender = authService.getCurrentUser();
+                        if (!sender.hasWallet()) {
+                            System.out.println("You must have a wallet to perform a transfer.");
+                            break;
+                        }
+
+                        System.out.print("Enter recipient's UUID: ");
+                        String recipientUUID = scanner.nextLine().trim();
+
+                        // Поиск получателя
+                        User recipient = users.stream()
+                                .filter(u -> u.getUuid().equalsIgnoreCase(recipientUUID))
+                                .findFirst()
+                                .orElse(null);
+
+                        if (recipient == null) {
+                            System.out.println("Recipient not found.");
+                            break;
+                        }
+
+                        if (!recipient.hasWallet()) {
+                            System.out.println("Recipient does not have a wallet.");
+                            break;
+                        }
+
+                        System.out.print("Enter amount to transfer: ");
+                        double amount;
+                        try {
+                            amount = Double.parseDouble(scanner.nextLine());
+                        } catch (NumberFormatException e) {
+                            System.out.println("Invalid amount. Please try again.");
+                            break;
+                        }
+
+                        if (amount <= 0) {
+                            System.out.println("Amount must be positive.");
+                            break;
+                        }
+
+                        // Выполнение перевода
+                        if (sender.getWallet().transferAmount(amount)) {
+                            recipient.getWallet().receiveAmount(amount, "Transfer from " + sender.getLogin());
+                            sender.getWallet().addOperation(new Operation(OperationType.EXPENSE, amount, "Transfer to " + recipient.getLogin()));
+                            System.out.println("Transfer successful!");
+                            DataStorage.saveData(users); // Сохранение данных
+                        } else {
+                            System.out.println("Insufficient funds for the transfer.");
+                        }
+                    } else {
+                        System.out.println("You must be logged in to perform a transfer.");
                     }
                     break;
 

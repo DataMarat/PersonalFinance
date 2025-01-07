@@ -14,5 +14,6 @@ public class Constants {
     public static final String FILTER_OPERATIONS_COMMAND = "Filter Operations";
     public static final String SHOW_STATISTICS_COMMAND = "Show Statistics";
     public static final String SHOW_FULL_MENU_COMMAND = "Show full menu";
+    public static final String TRANSFER_MONEY_COMMAND = "Transfer funds to another user";
     public static final String QUIT_PROGRAM_COMMAND = "Quit Program";
 }

@@ -114,4 +114,17 @@ public class Wallet {
             System.out.println("Warning: Your expenses exceed your income!");
         }
     }
+    public boolean transferAmount(double amount) {
+        if (balance >= amount) {
+            balance -= amount;
+            return true; // Успешный перевод
+        }
+        return false; // Недостаточно средств
+    }
+
+    public void receiveAmount(double amount, String category) {
+        balance += amount;
+        operations.add(new Operation(OperationType.INCOME, amount, category));
+    }
+
 }
