@@ -1,24 +1,27 @@
 package models;
 
-import java.util.*;
-import java.text.SimpleDateFormat;
-import java.util.List;
-import java.util.stream.Collectors;
-
 import utils.CategoryManager;
 
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 public class Wallet {
-    private List<Operation> operations; // Список операций
-    private double balance; // Баланс кошелька
+    private List<Operation> operations;
+    private double balance;
     private CategoryManager categoryManager;
 
     public Wallet(CategoryManager categoryManager) {
-        if (categoryManager == null) {
-            throw new IllegalArgumentException("CategoryManager cannot be null");
-        }
         this.categoryManager = categoryManager;
         this.operations = new ArrayList<>();
-        this.balance = 0.0; // Изначальный баланс
+        this.balance = 0.0;
+    }
+
+    public List<Operation> getOperations() {
+        return operations;
     }
 
     public double getBalance() {
@@ -29,46 +32,28 @@ public class Wallet {
         this.balance = balance;
     }
 
-    public List<Operation> getOperations() {
-        return operations;
-    }
-
     public void addOperation(Operation operation) {
-        if (this.categoryManager == null) {
-            throw new IllegalStateException("CategoryManager is not initialized in Wallet.");
-        }
-
         this.operations.add(operation);
-
-        // Обновляем баланс
         if (operation.getType() == OperationType.INCOME) {
             this.balance += operation.getAmount();
         } else if (operation.getType() == OperationType.EXPENSE) {
             this.balance -= operation.getAmount();
         }
-
-        // Проверка превышения лимитов
-        if (operation.getType() == OperationType.EXPENSE) {
-            String category = operation.getCategory();
-            double used = operations.stream()
-                    .filter(op -> op.getType() == OperationType.EXPENSE && op.getCategory().equalsIgnoreCase(category))
-                    .mapToDouble(Operation::getAmount)
-                    .sum();
-
-            double limit = getCategoryLimit(category);
-            if (limit > 0 && used > limit) {
-                System.out.println("Warning: You have exceeded the budget limit for category: " + category);
-            }
-        }
+        checkBudgetBalance(); // Проверяем баланс после добавления операции
     }
 
+    public void recalculateBalance() {
+        this.balance = operations.stream()
+                .mapToDouble(op -> op.getType() == OperationType.INCOME ? op.getAmount() : -op.getAmount())
+                .sum();
+    }
 
-    private double getCategoryLimit(String category) {
-        return categoryManager.getAllCategories().stream()
-                .filter(c -> c.getName().equalsIgnoreCase(category))
-                .findFirst()
-                .map(Category::getLimit)
-                .orElse(0.0);
+    public CategoryManager getCategoryManager() {
+        return categoryManager;
+    }
+
+    public void setCategoryManager(CategoryManager categoryManager) {
+        this.categoryManager = categoryManager;
     }
 
     public List<Operation> filterOperations(String category, Date fromDate, Date toDate) {
@@ -79,54 +64,54 @@ public class Wallet {
                 .collect(Collectors.toList());
     }
 
-    // Подсчёт общих доходов и расходов
     public double[] calculateTotals(Date fromDate, Date toDate) {
         double income = 0;
         double expense = 0;
 
-        for (Operation op : operations) {
-            if ((fromDate == null || !op.getDate().before(fromDate)) &&
-                    (toDate == null || !op.getDate().after(toDate))) {
-                if (op.getType() == OperationType.INCOME) {
-                    income += op.getAmount();
-                } else {
-                    expense += op.getAmount();
+        for (Operation operation : operations) {
+            if ((fromDate == null || !operation.getDate().before(fromDate)) &&
+                    (toDate == null || !operation.getDate().after(toDate))) {
+                if (operation.getType() == OperationType.INCOME) {
+                    income += operation.getAmount();
+                } else if (operation.getType() == OperationType.EXPENSE) {
+                    expense += operation.getAmount();
                 }
             }
         }
+
         return new double[]{income, expense};
     }
 
-    // Распределение расходов по категориям
     public Map<String, Double> calculateCategoryExpenses(Date fromDate, Date toDate) {
         Map<String, Double> categoryExpenses = new HashMap<>();
 
-        for (Operation op : operations) {
-            if (op.getType() == OperationType.EXPENSE &&
-                    (fromDate == null || !op.getDate().before(fromDate)) &&
-                    (toDate == null || !op.getDate().after(toDate))) {
-                categoryExpenses.put(op.getCategory(),
-                        categoryExpenses.getOrDefault(op.getCategory(), 0.0) + op.getAmount());
+        for (Operation operation : operations) {
+            if (operation.getType() == OperationType.EXPENSE &&
+                    (fromDate == null || !operation.getDate().before(fromDate)) &&
+                    (toDate == null || !operation.getDate().after(toDate))) {
+
+                String category = operation.getCategory();
+                double amount = operation.getAmount();
+                categoryExpenses.put(category, categoryExpenses.getOrDefault(category, 0.0) + amount);
             }
         }
+
         return categoryExpenses;
     }
+
     public void checkBudgetBalance() {
-        double income = operations.stream()
+        double totalIncome = operations.stream()
                 .filter(op -> op.getType() == OperationType.INCOME)
                 .mapToDouble(Operation::getAmount)
                 .sum();
 
-        double expense = operations.stream()
+        double totalExpense = operations.stream()
                 .filter(op -> op.getType() == OperationType.EXPENSE)
                 .mapToDouble(Operation::getAmount)
                 .sum();
 
-        if (expense > income) {
+        if (totalExpense > totalIncome) {
             System.out.println("Warning: Your expenses exceed your income!");
         }
-    }
-    public void setCategoryManager(CategoryManager categoryManager) {
-        this.categoryManager = categoryManager;
     }
 }

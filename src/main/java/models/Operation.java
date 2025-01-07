@@ -15,6 +15,13 @@ public class Operation {
         this.date = new Date();
     }
 
+    public Operation(OperationType type, double amount, String category, Date date) {
+        this.type = type;
+        this.amount = amount;
+        this.category = category;
+        this.date = date;
+    }
+
     public OperationType getType() {
         return type;
     }
