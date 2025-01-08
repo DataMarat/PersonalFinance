@@ -288,33 +288,80 @@ public class Main {
     }
 
     private static void handleShowStatistics(AuthenticationService authService, Scanner scanner) {
-        User currentUser = authService.getCurrentUser();
-        if (currentUser != null && currentUser.getWallet() != null) {
-            Wallet wallet = currentUser.getWallet();
-            System.out.print("Enter start date (yyyy-MM-dd) or leave blank: ");
-            String startDateInput = scanner.nextLine();
-            System.out.print("Enter end date (yyyy-MM-dd) or leave blank: ");
-            String endDateInput = scanner.nextLine();
-            Date fromDate = null, toDate = null;
-            try {
-                if (!startDateInput.isEmpty()) {
-                    fromDate = new SimpleDateFormat("yyyy-MM-dd").parse(startDateInput);
+        if (authService.getCurrentUser() != null && authService.getCurrentUser().getWallet() != null) {
+            Wallet wallet = authService.getCurrentUser().getWallet();
+
+            System.out.print("Enter start date (dd.MM.yyyy) or leave blank: ");
+            String fromDateInput = scanner.nextLine().trim();
+            Date fromDate = null;
+            if (!fromDateInput.isEmpty()) {
+                try {
+                    fromDate = new SimpleDateFormat("dd.MM.yyyy").parse(fromDateInput);
+                } catch (Exception e) {
+                    System.out.println("Invalid date format. Skipping start date.");
                 }
-                if (!endDateInput.isEmpty()) {
-                    toDate = new SimpleDateFormat("yyyy-MM-dd").parse(endDateInput);
-                }
-            } catch (Exception e) {
-                System.out.println("Invalid date format.");
             }
+
+            System.out.print("Enter end date (dd.MM.yyyy) or leave blank: ");
+            String toDateInput = scanner.nextLine().trim();
+            Date toDate = null;
+            if (!toDateInput.isEmpty()) {
+                try {
+                    toDate = new SimpleDateFormat("dd.MM.yyyy").parse(toDateInput);
+                } catch (Exception e) {
+                    System.out.println("Invalid date format. Skipping end date.");
+                }
+            }
+
+            // Подсчёт общих доходов и расходов
             double[] totals = wallet.calculateTotals(fromDate, toDate);
             System.out.println("Total Income: " + totals[0]);
             System.out.println("Total Expense: " + totals[1]);
-            Map<String, Double> expenses = wallet.calculateCategoryExpenses(fromDate, toDate);
-            System.out.println("Category-wise expenses:");
-            expenses.forEach((k, v) -> System.out.println("- " + k + ": " + v));
+
+            // Распределение расходов по категориям
+            Map<String, Double> categoryExpenses = wallet.calculateCategoryExpenses(fromDate, toDate);
+            if (categoryExpenses.isEmpty()) {
+                System.out.println("No expenses found for the given filters.");
+            } else {
+                System.out.println("Category-wise expenses:");
+                for (Map.Entry<String, Double> entry : categoryExpenses.entrySet()) {
+                    String categoryName = entry.getKey();
+                    double expense = entry.getValue();
+
+                    // Получаем лимит категории
+                    Category category = wallet.getCategories().stream()
+                            .filter(c -> c.getName().equalsIgnoreCase(categoryName))
+                            .findFirst()
+                            .orElse(null);
+
+                    if (category == null) {
+                        System.out.println("- " + categoryName + ": " + expense + " (No limit set)");
+                        continue;
+                    }
+
+                    String limitInfo = getString(category, expense);
+
+                    System.out.println("- " + categoryName + ": " + expense + limitInfo);
+                }
+            }
         } else {
             System.out.println("You must be logged in and have a wallet to view statistics.");
         }
+    }
+
+    private static String getString(Category category, double expense) {
+        String limitInfo;
+        if (category.getLimit() > 0) {
+            double remainingLimit = category.getLimit() - expense;
+            if (remainingLimit >= 0) {
+                limitInfo = " (Remaining limit: " + remainingLimit + ")";
+            } else {
+                limitInfo = " (Exceeds limit by: " + Math.abs(remainingLimit) + ")";
+            }
+        } else {
+            limitInfo = " (No limit set)";
+        }
+        return limitInfo;
     }
 
     private static void handleTransfer(AuthenticationService authService, List<User> users, Scanner scanner) {
