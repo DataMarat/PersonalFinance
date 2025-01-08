@@ -59,6 +59,7 @@ public class Wallet {
                 .filter(op -> (category == null || op.getCategory().equalsIgnoreCase(category)) &&
                         (fromDate == null || !op.getDate().before(fromDate)) &&
                         (toDate == null || !op.getDate().after(toDate)))
+                .sorted((o1, o2) -> o2.getDate().compareTo(o1.getDate())) // Сортировка по убыванию даты
                 .collect(Collectors.toList());
     }
 
