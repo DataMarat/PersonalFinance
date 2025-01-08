@@ -13,7 +13,6 @@ class WalletTest {
     @Test
     void testWalletInitialization() {
         Wallet wallet = new Wallet();
-
         assertNotNull(wallet.getOperations());
         assertNotNull(wallet.getCategories());
         assertEquals(0.0, wallet.getBalance());
@@ -23,49 +22,43 @@ class WalletTest {
     void testAddOperationAndBalanceUpdate() {
         Wallet wallet = new Wallet();
 
-        wallet.addOperation(new Operation(OperationType.INCOME, 5000, "Salary"));
-        assertEquals(5000, wallet.getBalance());
+        wallet.addOperation(new Operation(OperationType.INCOME, 10000, "Salary"));
+        assertEquals(10000, wallet.getBalance());
 
-        wallet.addOperation(new Operation(OperationType.EXPENSE, 2000, "Food"));
-        assertEquals(3000, wallet.getBalance());
+        wallet.addOperation(new Operation(OperationType.EXPENSE, 3000, "Food"));
+        assertEquals(7000, wallet.getBalance());
     }
 
     @Test
     void testAddCategory() {
         Wallet wallet = new Wallet();
-        wallet.addCategory(new Category("Food", 10000));
-        wallet.addCategory(new Category("Transport", 5000));
+        assertEquals(0, wallet.getCategories().size());
 
-        List<Category> categories = wallet.getCategories();
-        assertEquals(2, categories.size());
-        assertEquals("Food", categories.get(0).getName());
-        assertEquals(10000, categories.get(0).getLimit());
-        assertEquals("Transport", categories.get(1).getName());
-        assertEquals(5000, categories.get(1).getLimit());
+        wallet.addCategory(new Category("Food"));
+        wallet.addCategory(new Category("Transport"));
+
+        assertEquals(2, wallet.getCategories().size());
     }
 
     @Test
     void testRecalculateBalance() {
         Wallet wallet = new Wallet();
+        wallet.addOperation(new Operation(OperationType.INCOME, 2000, "Salary"));
+        wallet.addOperation(new Operation(OperationType.EXPENSE, 500, "Food"));
 
-        wallet.addOperation(new Operation(OperationType.INCOME, 5000, "Salary"));
-        wallet.addOperation(new Operation(OperationType.EXPENSE, 2000, "Food"));
-
-        wallet.setBalance(0); // Сбрасываем баланс для проверки пересчёта
+        wallet.setBalance(0); // Сбрасываем баланс
         wallet.recalculateBalance();
 
-        assertEquals(3000, wallet.getBalance());
+        assertEquals(1500, wallet.getBalance());
     }
 
     @Test
     void testFilterOperations() {
         Wallet wallet = new Wallet();
+        Date now = new Date();
 
-        Date date1 = new Date(System.currentTimeMillis() - 1000000); // 10 минут назад
-        Date date2 = new Date(); // Сейчас
-
-        wallet.addOperation(new Operation(OperationType.INCOME, 5000, "Salary", date1));
-        wallet.addOperation(new Operation(OperationType.EXPENSE, 2000, "Food", date2));
+        wallet.addOperation(new Operation(OperationType.INCOME, 5000, "Salary", now));
+        wallet.addOperation(new Operation(OperationType.EXPENSE, 2000, "Food", now));
 
         List<Operation> filtered = wallet.filterOperations("Food", null, null);
         assertEquals(1, filtered.size());
@@ -76,40 +69,48 @@ class WalletTest {
     void testCalculateTotals() {
         Wallet wallet = new Wallet();
 
-        wallet.addOperation(new Operation(OperationType.INCOME, 5000, "Salary"));
-        wallet.addOperation(new Operation(OperationType.EXPENSE, 2000, "Food"));
+        wallet.addOperation(new Operation(OperationType.INCOME, 8000, "Salary"));
+        wallet.addOperation(new Operation(OperationType.EXPENSE, 3000, "Food"));
 
         double[] totals = wallet.calculateTotals(null, null);
-        assertEquals(5000, totals[0]); // Доходы
-        assertEquals(2000, totals[1]); // Расходы
+        assertEquals(8000, totals[0]); // Доходы
+        assertEquals(3000, totals[1]); // Расходы
     }
 
     @Test
     void testCalculateCategoryExpenses() {
         Wallet wallet = new Wallet();
 
-        wallet.addOperation(new Operation(OperationType.EXPENSE, 2000, "Food"));
-        wallet.addOperation(new Operation(OperationType.EXPENSE, 3000, "Transport"));
+        wallet.addOperation(new Operation(OperationType.EXPENSE, 1000, "Food"));
+        wallet.addOperation(new Operation(OperationType.EXPENSE, 2000, "Transport"));
 
-        Map<String, Double> expenses = wallet.calculateCategoryExpenses(null, null);
-        assertEquals(2000, expenses.get("Food"));
-        assertEquals(3000, expenses.get("Transport"));
+        Map<String, Double> categoryExpenses = wallet.calculateCategoryExpenses(null, null);
+        assertEquals(1000, categoryExpenses.get("Food"));
+        assertEquals(2000, categoryExpenses.get("Transport"));
     }
 
     @Test
-    void testTransferAndReceiveAmount() {
-        Wallet senderWallet = new Wallet();
-        Wallet recipientWallet = new Wallet();
+    void testTransferAmount() {
+        Wallet wallet = new Wallet();
+        wallet.setBalance(5000);
 
-        senderWallet.setBalance(5000);
-        boolean transferSuccess = senderWallet.transferAmount(2000);
-        assertTrue(transferSuccess);
-        assertEquals(3000, senderWallet.getBalance());
+        assertTrue(wallet.transferAmount(3000));
+        assertEquals(2000, wallet.getBalance());
 
-        recipientWallet.receiveAmount(2000, "Transfer");
-        assertEquals(2000, recipientWallet.getBalance());
+        assertFalse(wallet.transferAmount(3000)); // Недостаточно средств
+        assertEquals(2000, wallet.getBalance());
+    }
 
-        assertEquals(1, recipientWallet.getOperations().size());
-        assertEquals("Transfer", recipientWallet.getOperations().get(0).getCategory());
+    @Test
+    void testReceiveAmount() {
+        Wallet wallet = new Wallet();
+
+        wallet.receiveAmount(2000, "Gift");
+        assertEquals(2000, wallet.getBalance());
+
+        List<Operation> operations = wallet.getOperations();
+        assertEquals(1, operations.size());
+        assertEquals("Gift", operations.get(0).getCategory());
+        assertEquals(2000, operations.get(0).getAmount());
     }
 }
